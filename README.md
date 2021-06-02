@@ -1,5 +1,5 @@
-# com.dotcms.ema-ovr
-This is version of EMA, allows a developer to override the proxy url by query string.  When the ability to override the proxy url is combined with a tool like ngrok, it can allow multiple remote developers to develop their SPAs and applications locally against the a central dev dotCMS instance.
+# Edit Mode Anywhere URL Override
+This is a drop in replacement for the dotCMS EMA capibility.  The difference is that this plugin allows individual developers to override the proxy url of edit mode by passing a query string.  The changed proxy url is stored in the developers session.  When the ability to override the proxy url is combined with a tool like ngrok, which exposes a port on the developers computer as a url, it can allow multiple remote developers to develop their client side SPA and applications locally and preview them against the content stored on a central dev dotCMS instance.
 
 
 
