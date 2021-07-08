@@ -1,0 +1,19 @@
+Manifest-Version: 1.0
+Bundle-Description: dotCMS - Web Interceptors example fragment
+Bundle-SymbolicName: com.dotcms.ema-ovr.fragment
+Export-Package: com.dotcms.ema;version=0,com.dotcms.ema.proxy;version=
+ 0,com.dotcms.filters.interceptor;version=0,com.dotcms.security.apps;v
+ ersion=0,com.dotmarketing.beans;version=0,com.dotmarketing.business;v
+ ersion=0,com.dotmarketing.business.web;version=0,com.dotmarketing.exc
+ eption;version=0,com.dotmarketing.filters;version=0,com.dotmarketing.
+ osgi;version=0,com.dotmarketing.util;version=0,com.dotmarketing.util.
+ json;version=0,com.google.common.collect;version=0,com.liferay.portal
+ .model;version=0,javax.servlet;version=0,javax.servlet.http;version=0
+ ,org.apache.http;version=0,org.osgi.framework;version=0
+Bundle-Name: Web Interceptors  example fragment
+Bundle-Version: 0.2
+Bundle-ManifestVersion: 2
+Bundle-Vendor: dotCMS
+Bundle-DocURL: https://dotcms.com/
+Fragment-Host: system.bundle; extension:=framework
+
