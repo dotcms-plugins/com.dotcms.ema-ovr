@@ -5,21 +5,29 @@ import com.dotcms.ema.proxy.ProxyResponse;
 import com.dotcms.ema.proxy.ProxyTool;
 import com.dotcms.filters.interceptor.Result;
 import com.dotcms.filters.interceptor.WebInterceptor;
+import com.dotcms.rest.api.v1.DotObjectMapperProvider;
 import com.dotcms.security.apps.AppSecrets;
 import com.dotmarketing.beans.Host;
 import com.dotmarketing.business.APILocator;
+import com.dotmarketing.business.CacheLocator;
 import com.dotmarketing.business.web.WebAPILocator;
 import com.dotmarketing.exception.DotDataException;
 import com.dotmarketing.exception.DotSecurityException;
 import com.dotmarketing.util.Logger;
 import com.dotmarketing.util.PageMode;
+import com.dotmarketing.util.RegEX;
+import com.dotmarketing.util.StringUtils;
 import com.dotmarketing.util.UtilMethods;
 import com.dotmarketing.util.json.JSONObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableMap;
 import org.apache.http.Header;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -123,7 +131,6 @@ public class EMAOvrWebInterceptor implements WebInterceptor{
         return true;
     }
 
-
     /**
      * Gets the proxyUrl for the given host
      * @param currentHost current Host to get the proxyUrl value
@@ -142,9 +149,33 @@ public class EMAOvrWebInterceptor implements WebInterceptor{
         try{
             appSecrets = APILocator.getAppsAPI().getSecrets(EMA_APP_CONFIG_KEY,
                     true, currentHost, APILocator.systemUser()).get();
-            return appSecrets.getSecrets().containsKey(PROXY_EDIT_MODE_URL_VAR)?
+            final Optional<String> proxyUrlOpt = appSecrets.getSecrets().containsKey(PROXY_EDIT_MODE_URL_VAR)?
                     Optional.ofNullable(appSecrets.getSecrets().get(PROXY_EDIT_MODE_URL_VAR).getString()) : Optional.empty();
 
+            if (proxyUrlOpt.isPresent()) {
+
+                final String proxyUrlText = proxyUrlOpt.get().trim();
+                if (StringUtils.isJson(proxyUrlText)) {
+
+                    final String cacheKey          = "ema-rewrite-"+currentHost.getIdentifier();
+                    List<Map<String, String>> rewriteBeans = (List<Map<String, String>>) CacheLocator.getSystemCache().get(cacheKey);
+                    if (null == rewriteBeans) {
+                        try {
+                            rewriteBeans = (List<Map<String, String>>) DotObjectMapperProvider.getInstance().
+                                    getDefaultObjectMapper().readValue(proxyUrlText, List.class);
+                        } catch (JsonProcessingException e) {
+                            Logger.debug(this, "Wrong json: " + proxyUrlText + ", msg: " + e.getMessage(), e);
+                            return Optional.empty();
+                        }
+
+                        CacheLocator.getSystemCache().put(cacheKey, rewriteBeans);
+                    }
+
+                    return getProxyUrlFrom(rewriteBeans, request);
+                }
+            }
+
+            return proxyUrlOpt;
         } catch (DotSecurityException | DotDataException e) {
             Logger.error(this, e.getMessage());
             return Optional.empty();
@@ -153,6 +184,38 @@ public class EMAOvrWebInterceptor implements WebInterceptor{
                 appSecrets.destroy();
             }
         }
+    }
+
+    private Optional<String> getProxyUrlFrom(final List<Map<String, String>> rewriteBeans, final HttpServletRequest request) {
+
+        if (UtilMethods.isSet(rewriteBeans)) {
+
+            final String requestURI = request.getRequestURI();
+            for (final Map<String, String> rewriteBean : rewriteBeans) {
+
+                if (isRequestURIMath (rewriteBean.get("source"), requestURI)) {
+
+                    return Optional.of(rewriteBean.get("destination"));
+                }
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    private boolean isRequestURIMath(final String source, final String requestURI) {
+
+        String uftUri = null;
+
+        try {
+
+            uftUri = URLDecoder.decode(requestURI, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+
+            uftUri = requestURI;
+        }
+
+        return RegEX.containsCaseInsensitive(uftUri, source.trim());
     }
 
     /**
