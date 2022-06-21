@@ -158,11 +158,11 @@ public class EMAOvrWebInterceptor implements WebInterceptor{
                 if (StringUtils.isJson(proxyUrlText)) {
 
                     final String cacheKey          = "ema-rewrite-"+currentHost.getIdentifier();
-                    List<Map<String, String>> rewriteBeans = (List<Map<String, String>>) CacheLocator.getSystemCache().get(cacheKey);
+                    RewritesBean rewriteBeans = (RewritesBean) CacheLocator.getSystemCache().get(cacheKey);
                     if (null == rewriteBeans) {
                         try {
-                            rewriteBeans = (List<Map<String, String>>) DotObjectMapperProvider.getInstance().
-                                    getDefaultObjectMapper().readValue(proxyUrlText, List.class);
+                            rewriteBeans = DotObjectMapperProvider.getInstance().
+                                    getDefaultObjectMapper().readValue(proxyUrlText, RewritesBean.class);
                         } catch (JsonProcessingException e) {
                             Logger.debug(this, "Wrong json: " + proxyUrlText + ", msg: " + e.getMessage(), e);
                             return Optional.empty();
@@ -186,16 +186,16 @@ public class EMAOvrWebInterceptor implements WebInterceptor{
         }
     }
 
-    private Optional<String> getProxyUrlFrom(final List<Map<String, String>> rewriteBeans, final HttpServletRequest request) {
+    private Optional<String> getProxyUrlFrom(final RewritesBean rewriteBeans, final HttpServletRequest request) {
 
         if (UtilMethods.isSet(rewriteBeans)) {
 
             final String requestURI = request.getRequestURI();
-            for (final Map<String, String> rewriteBean : rewriteBeans) {
+            for (final RewriteBean rewriteBean : rewriteBeans.getRewrites()) {
 
-                if (isRequestURIMath (rewriteBean.get("source"), requestURI)) {
+                if (isRequestURIMath (rewriteBean.getSource(), requestURI)) {
 
-                    return Optional.of(rewriteBean.get("destination"));
+                    return Optional.of(rewriteBean.getDestination());
                 }
             }
         }
